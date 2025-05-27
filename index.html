@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Envato Tracker - OAuth Callback</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 2rem;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        .logo {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #2E86AB, #A23B72);
+            border-radius: 12px;
+            margin: 0 auto 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 1rem;
+            font-size: 24px;
+        }
+        
+        .status {
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            font-weight: 500;
+        }
+        
+        .status.loading {
+            background: #e3f2fd;
+            color: #1976d2;
+            border: 1px solid #bbdefb;
+        }
+        
+        .status.success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+        }
+        
+        .status.error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ffcdd2;
+        }
+        
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #1976d2;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .instructions {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: #f5f5f5;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .code-display {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 0.5rem;
+            margin: 0.5rem 0;
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+        }
+        
+        button {
+            background: #2E86AB;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 0.5rem;
+            transition: background 0.2s;
+        }
+        
+        button:hover {
+            background: #1a5f7a;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .debug-info {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-size: 12px;
+            text-align: left;
+        }
+        
+        .debug-info h4 {
+            margin: 0 0 0.5rem 0;
+            color: #333;
+        }
+        
+        .debug-info pre {
+            background: #e9ecef;
+            padding: 0.5rem;
+            border-radius: 4px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">ET</div>
+        <h1>Envato Tracker</h1>
+        <div id="status" class="status loading">
+            <div class="spinner"></div>
+            Processing OAuth callback...
+        </div>
+        
+        <div id="details" style="display: none;">
+            <div class="code-display" id="code-display"></div>
+            <div class="button-group">
+                <button onclick="openApp()" id="open-app-btn" disabled>📱 Open Mobile App</button>
+                <button onclick="copyCode()" id="copy-btn" disabled>📋 Copy Code</button>
+                <button onclick="toggleDebug()" id="debug-btn">🔧 Show Debug Info</button>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <strong>What's happening:</strong><br>
+            1. ✅ Envato authorization completed<br>
+            2. 🔄 Processing OAuth code<br>
+            3. 📱 Attempting to open mobile app<br>
+            4. 🆘 If app doesn't open, use manual options below
+        </div>
+        
+        <div id="debug-info" class="debug-info" style="display: none;">
+            <h4>Debug Information:</h4>
+            <pre id="debug-content"></pre>
+        </div>
+    </div>
+
+    <script>
+        let authCode = '';
+        let debugData = {};
+        
+        // Parse URL parameters
+        function getUrlParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const params = {
+                code: urlParams.get('code'),
+                error: urlParams.get('error'),
+                error_description: urlParams.get('error_description'),
+                state: urlParams.get('state')
+            };
+            
+            debugData.urlParams = params;
+            debugData.fullUrl = window.location.href;
+            debugData.timestamp = new Date().toISOString();
+            
+            return params;
+        }
+        
+        // Display status
+        function setStatus(type, message) {
+            const statusEl = document.getElementById('status');
+            statusEl.className = `status ${type}`;
+            statusEl.innerHTML = message;
+        }
+        
+        // Show details
+        function showDetails(code) {
+            authCode = code;
+            const detailsEl = document.getElementById('details');
+            const codeEl = document.getElementById('code-display');
+            const btnEl = document.getElementById('open-app-btn');
+            const copyBtnEl = document.getElementById('copy-btn');
+            
+            detailsEl.style.display = 'block';
+            codeEl.textContent = `Authorization Code: ${code}`;
+            btnEl.disabled = false;
+            copyBtnEl.disabled = false;
+        }
+        
+        // Copy code to clipboard
+        function copyCode() {
+            if (authCode) {
+                navigator.clipboard.writeText(authCode).then(() => {
+                    alert('Authorization code copied to clipboard!');
+                }).catch(() => {
+                    // Fallback for older browsers
+                    const textArea = document.createElement('textarea');
+                    textArea.value = authCode;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    alert('Authorization code copied to clipboard!');
+                });
+            }
+        }
+        
+        // Toggle debug info
+        function toggleDebug() {
+            const debugEl = document.getElementById('debug-info');
+            const debugBtn = document.getElementById('debug-btn');
+            const debugContent = document.getElementById('debug-content');
+            
+            if (debugEl.style.display === 'none') {
+                debugEl.style.display = 'block';
+                debugBtn.textContent = '🔧 Hide Debug Info';
+                debugContent.textContent = JSON.stringify(debugData, null, 2);
+            } else {
+                debugEl.style.display = 'none';
+                debugBtn.textContent = '🔧 Show Debug Info';
+            }
+        }
+        
+        // Open mobile app with multiple fallback methods
+        function openApp() {
+            const params = getUrlParams();
+            
+            // Method 1: Custom URL scheme (primary)
+            let deepLinkUrl = 'com.envatotracker://oauth/callback';
+            
+            if (params.code) {
+                deepLinkUrl += `?code=${encodeURIComponent(params.code)}`;
+                if (params.state) {
+                    deepLinkUrl += `&state=${encodeURIComponent(params.state)}`;
+                }
+            } else if (params.error) {
+                deepLinkUrl += `?error=${encodeURIComponent(params.error)}`;
+                if (params.error_description) {
+                    deepLinkUrl += `&error_description=${encodeURIComponent(params.error_description)}`;
+                }
+            }
+            
+            debugData.deepLinkUrl = deepLinkUrl;
+            debugData.attempts = debugData.attempts || [];
+            
+            console.log('Attempting to open deep link:', deepLinkUrl);
+            
+            // Attempt 1: Direct window.location
+            debugData.attempts.push({
+                method: 'window.location.href',
+                url: deepLinkUrl,
+                timestamp: new Date().toISOString()
+            });
+            
+            try {
+                window.location.href = deepLinkUrl;
+            } catch (e) {
+                console.error('Method 1 failed:', e);
+            }
+            
+            // Attempt 2: Use iframe (for some mobile browsers)
+            setTimeout(() => {
+                try {
+                    const iframe = document.createElement('iframe');
+                    iframe.src = deepLinkUrl;
+                    iframe.style.display = 'none';
+                    document.body.appendChild(iframe);
+                    
+                    debugData.attempts.push({
+                        method: 'iframe',
+                        url: deepLinkUrl,
+                        timestamp: new Date().toISOString()
+                    });
+                    
+                    setTimeout(() => {
+                        document.body.removeChild(iframe);
+                    }, 1000);
+                } catch (e) {
+                    console.error('Method 2 failed:', e);
+                }
+            }, 500);
+            
+            // Attempt 3: Create a link and click it
+            setTimeout(() => {
+                try {
+                    const link = document.createElement('a');
+                    link.href = deepLinkUrl;
+                    link.style.display = 'none';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    debugData.attempts.push({
+                        method: 'link.click()',
+                        url: deepLinkUrl,
+                        timestamp: new Date().toISOString()
+                    });
+                } catch (e) {
+                    console.error('Method 3 failed:', e);
+                }
+            }, 1000);
+            
+            // Show fallback message after 3 seconds
+            setTimeout(() => {
+                setStatus('error', '📱 App not found or failed to open. Please copy the code and paste it in the app manually.');
+            }, 3000);
+        }
+        
+        // Main processing function
+        function processCallback() {
+            const params = getUrlParams();
+            
+            console.log('OAuth callback received:', params);
+            
+            if (params.error) {
+                setStatus('error', `❌ OAuth Error: ${params.error_description || params.error}`);
+                debugData.error = params;
+                return;
+            }
+            
+            if (!params.code) {
+                setStatus('error', '❌ No authorization code received');
+                debugData.error = 'No code in URL parameters';
+                return;
+            }
+            
+            // Success
+            setStatus('success', '✅ Authorization successful! Opening mobile app...');
+            showDetails(params.code);
+            
+            // Try to open app immediately
+            setTimeout(() => {
+                openApp();
+            }, 1000);
+        }
+        
+        // Run when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add some delay to show the loading state
+            setTimeout(processCallback, 500);
+        });
+        
+        // Global functions
+        window.openApp = openApp;
+        window.copyCode = copyCode;
+        window.toggleDebug = toggleDebug;
+        
+        // Debug: Log page visibility changes
+        document.addEventListener('visibilitychange', function() {
+            debugData.visibilityChanges = debugData.visibilityChanges || [];
+            debugData.visibilityChanges.push({
+                hidden: document.hidden,
+                timestamp: new Date().toISOString()
+            });
+        });
+        
+        // Debug: Log when page loses focus (might indicate app opened)
+        window.addEventListener('blur', function() {
+            debugData.windowEvents = debugData.windowEvents || [];
+            debugData.windowEvents.push({
+                event: 'blur',
+                timestamp: new Date().toISOString()
+            });
+            console.log('Window lost focus - app might have opened');
+        });
+        
+        window.addEventListener('focus', function() {
+            debugData.windowEvents = debugData.windowEvents || [];
+            debugData.windowEvents.push({
+                event: 'focus',
+                timestamp: new Date().toISOString()
+            });
+            console.log('Window gained focus - user returned to browser');
+        });
+    </script>
+</body>
+</html>
