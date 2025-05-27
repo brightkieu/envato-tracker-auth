@@ -3,221 +3,247 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Envato Tracker - Authentication</title>
-    <meta name="description" content="Envato Tracker authentication callback handler">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔗</text></svg>">
+    <title>Envato Tracker - OAuth Callback</title>
     <style>
-        * {
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
-            color: white;
             min-height: 100vh;
             display: flex;
-            align-items: center;
             justify-content: center;
-            padding: 20px;
+            align-items: center;
         }
         
         .container {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 24px;
-            padding: 48px 40px;
-            max-width: 520px;
-            width: 100%;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 2rem;
             text-align: center;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            animation: fadeIn 0.6s ease-out;
+            max-width: 400px;
+            width: 90%;
         }
         
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .icon {
-            font-size: 64px;
-            margin-bottom: 24px;
-            animation: bounce 2s infinite;
-        }
-        
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-            40% { transform: translateY(-10px); }
-            60% { transform: translateY(-5px); }
+        .logo {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #2E86AB, #A23B72);
+            border-radius: 12px;
+            margin: 0 auto 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
         }
         
         h1 {
-            font-size: 32px;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-        
-        .subtitle {
-            opacity: 0.9;
-            font-size: 16px;
-            margin-bottom: 32px;
+            color: #333;
+            margin-bottom: 1rem;
+            font-size: 24px;
         }
         
         .status {
-            padding: 20px;
-            border-radius: 16px;
-            margin: 24px 0;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
             font-weight: 500;
-            font-size: 16px;
         }
         
-        .success {
-            background: rgba(16, 185, 129, 0.2);
-            border: 2px solid rgba(16, 185, 129, 0.4);
-            color: #10B981;
+        .status.loading {
+            background: #e3f2fd;
+            color: #1976d2;
+            border: 1px solid #bbdefb;
         }
         
-        .error {
-            background: rgba(239, 68, 68, 0.2);
-            border: 2px solid rgba(239, 68, 68, 0.4);
-            color: #EF4444;
+        .status.success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
         }
         
-        .loading {
-            background: rgba(59, 130, 246, 0.2);
-            border: 2px solid rgba(59, 130, 246, 0.4);
-            color: #3B82F6;
+        .status.error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ffcdd2;
         }
         
         .spinner {
-            display: inline-block;
-            width: 24px;
-            height: 24px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #1976d2;
             border-radius: 50%;
-            border-top-color: currentColor;
             animation: spin 1s linear infinite;
-            margin-right: 12px;
+            display: inline-block;
+            margin-right: 8px;
         }
         
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
         
-        .copy-button {
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            padding: 12px 24px;
+        .instructions {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: #f5f5f5;
             border-radius: 8px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .code-display {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 0.5rem;
+            margin: 0.5rem 0;
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+        }
+        
+        button {
+            background: #2E86AB;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
             cursor: pointer;
             font-size: 14px;
-            margin-top: 16px;
-            transition: all 0.2s ease;
+            margin-top: 1rem;
+            transition: background 0.2s;
         }
         
-        .copy-button:hover {
-            background: rgba(255, 255, 255, 0.3);
+        button:hover {
+            background: #1a5f7a;
         }
         
-        .footer {
-            margin-top: 32px;
-            padding-top: 24px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            font-size: 12px;
-            opacity: 0.6;
-        }
-        
-        @media (max-width: 600px) {
-            .container { padding: 32px 24px; margin: 10px; }
-            h1 { font-size: 28px; }
-            .icon { font-size: 48px; }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="icon">🔗</div>
+        <div class="logo">ET</div>
         <h1>Envato Tracker</h1>
-        <p class="subtitle">Đang xử lý xác thực tài khoản Envato...</p>
-        
         <div id="status" class="status loading">
             <div class="spinner"></div>
-            Đang kết nối với ứng dụng...
+            Processing OAuth callback...
         </div>
         
-        <button id="copyButton" class="copy-button" style="display: none;">
-            📋 Sao chép mã xác thực
-        </button>
+        <div id="details" style="display: none;">
+            <div class="code-display" id="code-display"></div>
+            <button onclick="openApp()" id="open-app-btn" disabled>Open Envato Tracker App</button>
+        </div>
         
-        <div class="footer">
-            Created by kbqdev • 2025-05-23<br>
-            GitHub Pages Deployment
+        <div class="instructions">
+            <strong>What's happening:</strong><br>
+            1. Envato has redirected you here after authorization<br>
+            2. We're processing your OAuth code<br>
+            3. You'll be redirected back to the mobile app<br>
+            4. If automatic redirect fails, use the button above
         </div>
     </div>
 
     <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get('code');
-        const error = urlParams.get('error');
-        const state = urlParams.get('state');
-        
-        const statusDiv = document.getElementById('status');
-        const copyButton = document.getElementById('copyButton');
-        
-        function updateStatus(type, message) {
-            statusDiv.className = `status ${type}`;
-            statusDiv.innerHTML = type === 'loading' 
-                ? `<div class="spinner"></div>${message}`
-                : message;
+        // Parse URL parameters
+        function getUrlParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return {
+                code: urlParams.get('code'),
+                error: urlParams.get('error'),
+                error_description: urlParams.get('error_description'),
+                state: urlParams.get('state')
+            };
         }
-
-        function handleAuth() {
-            console.log('GitHub Pages auth callback:', { code: !!code, error, state });
+        
+        // Display status
+        function setStatus(type, message) {
+            const statusEl = document.getElementById('status');
+            statusEl.className = `status ${type}`;
+            statusEl.innerHTML = message;
+        }
+        
+        // Show details
+        function showDetails(code) {
+            const detailsEl = document.getElementById('details');
+            const codeEl = document.getElementById('code-display');
+            const btnEl = document.getElementById('open-app-btn');
             
-            if (error) {
-                updateStatus('error', `❌ Lỗi xác thực: ${error}`);
-                return;
+            detailsEl.style.display = 'block';
+            codeEl.textContent = `Authorization Code: ${code}`;
+            btnEl.disabled = false;
+        }
+        
+        // Open mobile app with deep link
+        function openApp() {
+            const params = getUrlParams();
+            let deepLinkUrl = 'com.envatotracker://oauth/callback';
+            
+            if (params.code) {
+                deepLinkUrl += `?code=${encodeURIComponent(params.code)}`;
+                if (params.state) {
+                    deepLinkUrl += `&state=${encodeURIComponent(params.state)}`;
+                }
+            } else if (params.error) {
+                deepLinkUrl += `?error=${encodeURIComponent(params.error)}`;
+                if (params.error_description) {
+                    deepLinkUrl += `&error_description=${encodeURIComponent(params.error_description)}`;
+                }
             }
-
-            if (!code) {
-                updateStatus('error', '❌ Không nhận được mã xác thực');
-                return;
-            }
-
-            // Deep link cho mobile app
-            const deepLink = `envatotracker://auth/callback?code=${encodeURIComponent(code)}${state ? '&state=' + encodeURIComponent(state) : ''}`;
             
-            updateStatus('success', '✅ Xác thực thành công! Đang mở ứng dụng...');
+            console.log('Opening deep link:', deepLinkUrl);
             
-            // Thử mở deep link
-            try {
-                window.location.href = deepLink;
-            } catch (err) {
-                console.log('Deep link failed:', err);
-            }
+            // Try to open the app
+            window.location.href = deepLinkUrl;
             
-            // Hiện nút copy sau 3 giây
+            // Fallback: Show instructions if app doesn't open
             setTimeout(() => {
-                copyButton.style.display = 'inline-block';
-                copyButton.onclick = () => {
-                    if (navigator.clipboard) {
-                        navigator.clipboard.writeText(code).then(() => {
-                            copyButton.innerHTML = '✅ Đã sao chép!';
-                            copyButton.style.background = 'rgba(16, 185, 129, 0.3)';
-                        });
-                    } else {
-                        prompt('Sao chép mã này:', code);
-                    }
-                };
+                setStatus('error', 'App not found. Please make sure Envato Tracker is installed on your device.');
             }, 3000);
         }
-
-        // Bắt đầu xử lý
-        setTimeout(handleAuth, 500);
+        
+        // Main processing function
+        function processCallback() {
+            const params = getUrlParams();
+            
+            console.log('OAuth callback received:', params);
+            
+            if (params.error) {
+                setStatus('error', `❌ OAuth Error: ${params.error_description || params.error}`);
+                return;
+            }
+            
+            if (!params.code) {
+                setStatus('error', '❌ No authorization code received');
+                return;
+            }
+            
+            // Success
+            setStatus('success', '✅ Authorization successful! Redirecting to app...');
+            showDetails(params.code);
+            
+            // Auto redirect after 2 seconds
+            setTimeout(() => {
+                openApp();
+            }, 2000);
+        }
+        
+        // Run when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add some delay to show the loading state
+            setTimeout(processCallback, 1000);
+        });
+        
+        // Manual redirect button
+        window.openApp = openApp;
     </script>
 </body>
 </html>
